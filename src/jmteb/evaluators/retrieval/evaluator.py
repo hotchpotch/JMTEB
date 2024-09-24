@@ -49,7 +49,8 @@ class RetrievalEvaluator(EmbeddingEvaluator):
         val_query_dataset: RetrievalQueryDataset,
         test_query_dataset: RetrievalQueryDataset,
         doc_dataset: RetrievalDocDataset,
-        doc_chunk_size: int = 1000000,
+        # doc_chunk_size: int = 1000000,
+        doc_chunk_size: int = 10000,
         accuracy_at_k: list[int] | None = None,
         ndcg_at_k: list[int] | None = None,
         query_prefix: str | None = None,
@@ -86,7 +87,9 @@ class RetrievalEvaluator(EmbeddingEvaluator):
         val_query_embeddings = model.batch_encode_with_cache(
             text_list=[item.query for item in self.val_query_dataset],
             prefix=self.query_prefix,
-            cache_path=Path(cache_dir) / "val_query.bin" if cache_dir is not None else None,
+            cache_path=Path(cache_dir) / "val_query.bin"
+            if cache_dir is not None
+            else None,
             overwrite_cache=overwrite_cache,
         )
         if self.val_query_dataset == self.test_query_dataset:
@@ -95,14 +98,18 @@ class RetrievalEvaluator(EmbeddingEvaluator):
             test_query_embeddings = model.batch_encode_with_cache(
                 text_list=[item.query for item in self.test_query_dataset],
                 prefix=self.query_prefix,
-                cache_path=Path(cache_dir) / "test_query.bin" if cache_dir is not None else None,
+                cache_path=Path(cache_dir) / "test_query.bin"
+                if cache_dir is not None
+                else None,
                 overwrite_cache=overwrite_cache,
             )
 
         doc_embeddings = model.batch_encode_with_cache(
             text_list=[item.text for item in self.doc_dataset],
             prefix=self.doc_prefix,
-            cache_path=Path(cache_dir) / "corpus.bin" if cache_dir is not None else None,
+            cache_path=Path(cache_dir) / "corpus.bin"
+            if cache_dir is not None
+            else None,
             overwrite_cache=overwrite_cache,
         )
 
@@ -122,7 +129,9 @@ class RetrievalEvaluator(EmbeddingEvaluator):
                 doc_embeddings=doc_embeddings,
                 dist_func=dist_func,
             )
-        sorted_val_results = sorted(val_results.items(), key=lambda res: res[1][self.main_metric], reverse=True)
+        sorted_val_results = sorted(
+            val_results.items(), key=lambda res: res[1][self.main_metric], reverse=True
+        )
         optimal_dist_name = sorted_val_results[0][0]
 
         test_scores, test_predictions = self._compute_metrics(
@@ -157,7 +166,9 @@ class RetrievalEvaluator(EmbeddingEvaluator):
             top_k_indices_chunks: list[np.ndarray] = []
             top_k_scores_chunks: list[np.ndarray] = []
             for offset in range(0, len(doc_embeddings), self.doc_chunk_size):
-                doc_embeddings_chunk = doc_embeddings[offset : offset + self.doc_chunk_size]
+                doc_embeddings_chunk = doc_embeddings[
+                    offset : offset + self.doc_chunk_size
+                ]
 
                 if torch.cuda.is_available():
                     if dist.is_torchelastic_launched():
@@ -171,12 +182,15 @@ class RetrievalEvaluator(EmbeddingEvaluator):
                 doc_embeddings_chunk = to_tensor(doc_embeddings_chunk, device=device)
                 similarity = dist_func(query_embeddings, doc_embeddings_chunk)
 
-                top_k = min(self.max_top_k, similarity.shape[1])  # in case the corpus is smaller than max_top_k
+                top_k = min(
+                    self.max_top_k, similarity.shape[1]
+                )  # in case the corpus is smaller than max_top_k
                 top_k_scores, top_k_indices = torch.topk(
                     similarity,
                     k=top_k,
                     dim=1,
                 )
+                # print(top_k_scores, top_k_indices)
 
                 top_k_indices_chunks.append(top_k_indices + offset)
                 top_k_scores_chunks.append(top_k_scores)
@@ -188,22 +202,36 @@ class RetrievalEvaluator(EmbeddingEvaluator):
 
         top_k = min(self.max_top_k, top_k_indices.shape[0])
         sorting_indices_for_top_k = torch.argsort(-top_k_scores, axis=1)[:, :top_k]
-        sorted_top_k_indices = torch.take_along_dim(top_k_indices, sorting_indices_for_top_k, axis=1).tolist()
+        sorted_top_k_indices = torch.take_along_dim(
+            top_k_indices, sorting_indices_for_top_k, axis=1
+        ).tolist()
 
         golden_doc_ids = [item.relevant_docs for item in query_dataset]
-        retrieved_doc_ids = [[self.doc_dataset[i].id for i in indices] for indices in sorted_top_k_indices]
+        retrieved_doc_ids = [
+            [self.doc_dataset[i].id for i in indices]
+            for indices in sorted_top_k_indices
+        ]
 
         predictions = (
-            self._format_predictions(query_dataset, self.doc_dataset, retrieved_doc_ids, self.top_n_docs_to_log)
+            self._format_predictions(
+                query_dataset,
+                self.doc_dataset,
+                retrieved_doc_ids,
+                self.top_n_docs_to_log,
+            )
             if self.log_predictions
             else None
         )
 
         for k in self.accuracy_at_k:
-            results[f"accuracy@{k}"] = accuracy_at_k(golden_doc_ids, retrieved_doc_ids, k)
+            results[f"accuracy@{k}"] = accuracy_at_k(
+                golden_doc_ids, retrieved_doc_ids, k
+            )
         for k in self.ndcg_at_k:
             results[f"ndcg@{k}"] = ndcg_at_k(golden_doc_ids, retrieved_doc_ids, k)
-        results[f"mrr@{self.max_top_k}"] = mrr_at_k(golden_doc_ids, retrieved_doc_ids, self.max_top_k)
+        results[f"mrr@{self.max_top_k}"] = mrr_at_k(
+            golden_doc_ids, retrieved_doc_ids, self.max_top_k
+        )
 
         return results, predictions
 
@@ -218,11 +246,13 @@ class RetrievalEvaluator(EmbeddingEvaluator):
         for q, pred_docids in zip(query_dataset, retrieved_doc_ids):
             q: RetrievalQuery
             golden_docs: list[RetrievalDoc] = [
-                doc_dataset[doc_dataset.docid_to_idx[docid]] for docid in q.relevant_docs
+                doc_dataset[doc_dataset.docid_to_idx[docid]]
+                for docid in q.relevant_docs
             ]
             pred_docids = pred_docids[:top_n_to_log]
             pred_docs: list[RetrievalDoc] = [
-                doc_dataset[doc_dataset.docid_to_idx[pred_docid]] for pred_docid in pred_docids
+                doc_dataset[doc_dataset.docid_to_idx[pred_docid]]
+                for pred_docid in pred_docids
             ]
             prediction = RetrievalPrediction(
                 query=q.query,
@@ -233,11 +263,15 @@ class RetrievalEvaluator(EmbeddingEvaluator):
         return predictions
 
 
-def accuracy_at_k(relevant_docs: list[list[T]], top_hits: list[list[T]], k: int) -> float:
+def accuracy_at_k(
+    relevant_docs: list[list[T]], top_hits: list[list[T]], k: int
+) -> float:
     acc = 0
     for query_rel_docs, query_top_hits in zip(relevant_docs, top_hits):
         if len(query_rel_docs) == 0:
-            warnings.warn("Query with no relevant documents found. Skip that from metric calculation.")
+            warnings.warn(
+                "Query with no relevant documents found. Skip that from metric calculation."
+            )
             continue
 
         for hit in query_top_hits[0:k]:
@@ -251,7 +285,9 @@ def mrr_at_k(relevant_docs: list[list[T]], top_hits: list[list[T]], k: int) -> f
     mrr = 0
     for query_rel_docs, query_top_hits in zip(relevant_docs, top_hits):
         if len(query_rel_docs) == 0:
-            warnings.warn("Query with no relevant documents found. Skip that from metric calculation.")
+            warnings.warn(
+                "Query with no relevant documents found. Skip that from metric calculation."
+            )
             continue
 
         for rank, hit in enumerate(query_top_hits[0:k], start=1):
@@ -266,14 +302,18 @@ def ndcg_at_k(relevant_docs: list[list[T]], top_hits: list[list[T]], k: int) -> 
     num_valid_queries = 0
     for query_rel_docs, query_top_hits in zip(relevant_docs, top_hits):
         if len(query_rel_docs) == 0:
-            warnings.warn("Query with no relevant documents found. Skip that from metric calculation.")
+            warnings.warn(
+                "Query with no relevant documents found. Skip that from metric calculation."
+            )
             continue
 
         dcg = 0
         for rank, hit in enumerate(query_top_hits[0:k], start=1):
             if hit in query_rel_docs:
                 dcg += 1.0 / np.log2(rank + 1)
-        idcg = sum([1 / np.log2(rank + 1) for rank in range(1, len(query_rel_docs) + 1)])
+        idcg = sum(
+            [1 / np.log2(rank + 1) for rank in range(1, len(query_rel_docs) + 1)]
+        )
         total_ndcg_scores += dcg / idcg
 
         num_valid_queries += 1
@@ -310,4 +350,6 @@ class Similarities:
 
     @staticmethod
     def dot_score(e1: Tensor, e2: Tensor) -> Tensor:
-        return torch.mm(e1, e2.transpose(0, 1))
+        e2 = e2.to_sparse()
+        res = torch.mm(e1, e2.transpose(0, 1))
+        return res

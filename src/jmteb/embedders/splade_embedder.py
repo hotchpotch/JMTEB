@@ -1,6 +1,9 @@
 from __future__ import annotations
 
+from os import PathLike
+
 import numpy as np
+import torch
 from yasem import SpladeEmbedder as YasemSpladeEmbedder
 
 from jmteb.embedders.base import TextEmbedder
@@ -36,18 +39,19 @@ class SpladeEmbedder(TextEmbedder):
         self.max_seq_length = self.model.max_seq_length
         self.add_eos = add_eos
 
-        self.set_output_numpy()
-
     def encode(
         self,
         text: str | list[str],
-        show_progress_bar: bool = True,
-    ) -> np.ndarray:
+        prefix: str | None = None,
+        show_progress_bar: bool = False,
+    ) -> np.ndarray | torch.Tensor:
         if self.add_eos:
             text = self._add_eos_func(text)
         is_single_text = isinstance(text, str)
         if is_single_text:
             text = [text]
+        if prefix:
+            text = [prefix + t for t in text]
         embeddings = self.model.encode(
             text,
             convert_to_numpy=True,
@@ -55,8 +59,11 @@ class SpladeEmbedder(TextEmbedder):
             device=self.device,  # type: ignore
             show_progress_bar=show_progress_bar,
         )
+        # print(self.model.get_token_values(embeddings))
         if is_single_text:
             embeddings = embeddings[0]
+        if self.set_output_tensor:
+            embeddings = torch.Tensor(embeddings)
         return embeddings  # type: ignore
 
     def _add_eos_func(self, text: str | list[str]) -> str | list[str]:

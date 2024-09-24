@@ -4,4 +4,5 @@ from jmteb.embedders.data_parallel_sbert_embedder import (
 )
 from jmteb.embedders.openai_embedder import OpenAIEmbedder
 from jmteb.embedders.sbert_embedder import SentenceBertEmbedder
+from jmteb.embedders.splade_embedder import SpladeEmbedder
 from jmteb.embedders.transformers_embedder import TransformersEmbedder

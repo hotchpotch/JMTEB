@@ -3402,13 +3402,13 @@ multidict = ">=4.0"
 
 [[package]]
 name = "yasem"
-version = "0.3.0"
+version = "0.3.1"
 description = "YASEM - Yet Another Splade|Sparse Embedder - A simple and efficient library for SPLADE embeddings"
 optional = false
 python-versions = ">=3.9"
 files = [
-    {file = "yasem-0.3.0-py3-none-any.whl", hash = "sha256:77dd06ec3fe967ffd068f04ff19885c03db0c828aad5321c44446b4c853471f2"},
-    {file = "yasem-0.3.0.tar.gz", hash = "sha256:bd1ab428c31cc0ed4e038dc998ffba05964df83fe69e5afb5f84eeb19db6db14"},
+    {file = "yasem-0.3.1-py3-none-any.whl", hash = "sha256:e65b365bcfea89e021426c2ca6ab783feb770a73123d1c6069bae0cd56b90807"},
+    {file = "yasem-0.3.1.tar.gz", hash = "sha256:a3848a17918a05840cd65f93e8f8aa0d3948b624e1aba9799bd2c3fe431365dc"},
 ]
 
 [package.dependencies]
@@ -3420,4 +3420,4 @@ transformers = ">=4.0.0"
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.10,<4.0"
-content-hash = "8590f427e610d75e27194879cce9106458f601feb19de45d55d70a948fa19aa6"
+content-hash = "d62592c30dde6a8e185a23aa541e9d7fe50df9ae88133533121cb2e3e687259e"

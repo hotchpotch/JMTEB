@@ -13,7 +13,7 @@ poetry run python -m jmteb \
   --save_dir "results/${model//\//_}" \
   --overwrite_cache false \
   --evaluators src/jmteb/configs/jmteb.jsonnet \
-  --eval_include "['mrtydi', 'jagovfaqs_22k','nlp_journal_title_abs', 'nlp_journal_abs_intro', 'nlp_journal_title_intro', 'jaqket', 'esci']"
+  --eval_include "['jacwir']"
 #  --eval_include "['jagovfaqs_22k','nlp_journal_title_abs', 'nlp_journal_abs_intro', 'nlp_journal_title_intro', 'jaqket', 'esci']"
 #   --eval_include "['jaqket', 'jagovfaqs_22k', 'mrtydi']"
 

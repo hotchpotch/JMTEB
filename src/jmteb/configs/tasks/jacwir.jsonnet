@@ -2,6 +2,10 @@
   jacwir: {
     class_path: 'RetrievalEvaluator',
     init_args: {
+#      query_prefix: 'query: ',
+#      doc_prefix: 'passage: ',
+#      query_prefix: 'クエリ: ',
+#      doc_prefix: '文章: ',
       val_query_dataset: {
         class_path: 'HfRetrievalQueryDataset',
         init_args: {

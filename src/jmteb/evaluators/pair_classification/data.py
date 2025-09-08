@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from abc import ABC, abstractmethod
 
 import datasets
@@ -41,7 +42,8 @@ class HfPairClassificationDataset(PairClassificationDataset):
         self.path = path
         self.split = split
         self.name = name
-        self.dataset = datasets.load_dataset(path, split=split, name=name, trust_remote_code=True)
+        revision = os.environ.get('JMTEB_DATASET_REVISION', 'main')
+        self.dataset = datasets.load_dataset(path, split=split, name=name, trust_remote_code=True, revision=revision)
         self.sentence1_key = sentence1_key
         self.sentence2_key = sentence2_key
         self.label_key = label_key

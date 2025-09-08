@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 from abc import ABC, abstractmethod
 
 import datasets
@@ -85,7 +86,8 @@ class HfRerankingQueryDataset(RerankingQueryDataset):
         self.path = path
         self.split = split
         self.name = name
-        self.dataset = datasets.load_dataset(path, split=split, name=name, trust_remote_code=True)
+        revision = os.environ.get('JMTEB_DATASET_REVISION', 'main')
+        self.dataset = datasets.load_dataset(path, split=split, name=name, trust_remote_code=True, revision=revision)
         self.query_key = query_key
         self.retrieved_docs_key = retrieved_docs_key
         self.relevance_scores_key = relevance_scores_key
@@ -152,7 +154,8 @@ class HfRerankingDocDataset(RerankingDocDataset):
         self.path = path
         self.split = split
         self.name = name
-        self.dataset = datasets.load_dataset(path, split=split, name=name, trust_remote_code=True)
+        revision = os.environ.get('JMTEB_DATASET_REVISION', 'main')
+        self.dataset = datasets.load_dataset(path, split=split, name=name, trust_remote_code=True, revision=revision)
         self.id_key = id_key
         self.text_key = text_key
         self._build_idx_docid_mapping()

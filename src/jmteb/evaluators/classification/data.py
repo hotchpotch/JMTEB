@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from abc import ABC, abstractmethod
 
 import datasets
@@ -41,7 +42,8 @@ class HfClassificationDataset(ClassificationDataset):
         self.path = path
         self.split = split
         self.name = name
-        self.dataset = datasets.load_dataset(path, split=split, name=name, trust_remote_code=True)
+        revision = os.environ.get('JMTEB_DATASET_REVISION', 'main')
+        self.dataset = datasets.load_dataset(path, split=split, name=name, trust_remote_code=True, revision=revision)
         self.text_key = text_key
         self.label_key = label_key
         if not self.dataset.features[self.label_key].dtype.startswith("int"):

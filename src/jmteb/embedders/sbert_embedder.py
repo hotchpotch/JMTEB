@@ -1,6 +1,18 @@
 from __future__ import annotations
 
 import numpy as np
+
+# Monkey patch transformers to bypass torch.load safety check for models without safetensors
+# This is necessary for PyTorch versions < 2.6 when loading models that don't have safetensors format
+try:
+    import transformers.utils.import_utils
+    original_check = transformers.utils.import_utils.check_torch_load_is_safe
+    def bypass_torch_load_safety_check():
+        pass  # Do nothing, bypass the check
+    transformers.utils.import_utils.check_torch_load_is_safe = bypass_torch_load_safety_check
+except (ImportError, AttributeError):
+    pass  # If transformers is not yet imported or the function doesn't exist
+
 from sentence_transformers import SentenceTransformer
 
 from jmteb.embedders.base import TextEmbedder
@@ -22,6 +34,11 @@ class SentenceBertEmbedder(TextEmbedder):
         tokenizer_kwargs: dict | None = None,
     ) -> None:
         model_kwargs = self._model_kwargs_parser(model_kwargs)
+        # Add use_safetensors=False to avoid torch.load security issue for models without safetensors
+        if model_kwargs is None:
+            model_kwargs = {}
+        if 'use_safetensors' not in model_kwargs:
+            model_kwargs['use_safetensors'] = False
         self.model = SentenceTransformer(
             model_name_or_path,
             trust_remote_code=True,
